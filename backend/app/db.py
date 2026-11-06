@@ -49,6 +49,23 @@ def insert_chunks(conn, document_id, chunks):
     conn.commit()
     return chunk_ids
 
+def set_document_status(conn, document_id, status):
+    conn.execute("UPDATE documents SET status = ? WHERE id = ?", (status, document_id))
+    conn.commit()
+
+def get_chunks(conn, chunk_ids):
+    if not chunk_ids:
+        return {}
+    marks = ",".join("?" * len(chunk_ids))
+    rows = conn.execute(
+        f"""SELECT c.id, c.page, c.text, d.filename
+            FROM chunks c JOIN documents d ON d.id = c.document_id
+            WHERE c.id IN ({marks})""", 
+            chunk_ids,
+    )
+
+    return {r['id']: dict(r) for r in rows}
+
 if __name__ == "__main__":
        # adjust to your import path
 
