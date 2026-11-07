@@ -28,6 +28,18 @@ def init_db():
             page        INTEGER,
             text        TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS chats (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            title       TEXT,
+            created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS chat_documents(
+            chat_id         INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+            document_id    INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+            PRIMARY KEY     (chat_id, document_id)
+        );
         """)
 
 def create_document(conn, filename, file_type):
@@ -66,20 +78,24 @@ def get_chunks(conn, chunk_ids):
 
     return {r['id']: dict(r) for r in rows}
 
-if __name__ == "__main__":
-       # adjust to your import path
+def create_chat(conn, title=None):
+    cur = conn.execute("INSERT INTO chats (title) VALUES (?)", (title,))
+    conn.commit()
+    return cur.lastrowid
 
-    init_db()
-    conn = get_connection()
+def attach_document(conn, chat_id, document_id):
+    conn.execute(
+        "INSERT OR IGNORE INTO chat_documents (chat_id, document_id) VALUES (?, ?)",
+        (chat_id, document_id)
+    )
+    conn.commit()
 
-    pages = [
-        {"page": 1, "text": "Cats are small mammals. " * 60},
-        {"page": 2, "text": "Dogs are loyal animals. " * 60},
-    ]
-    chunks = chunk_document(pages, "test.pdf", "pdf")
+def get_chat_document_ids(conn, chat_id):
+    rows = conn.execute(
+        """SELECT cd.document_id FROM chat_documents cd 
+        JOIN documents d ON d.id = cd.document_id 
+        WHERE cd.chat_id = ? AND d.status = 'ready'""",
+        (chat_id,),
+    )
+    return [r['document_id'] for r in rows]
 
-    doc_id = create_document(conn, "test.pdf", "pdf")
-    chunk_ids = insert_chunks(conn, doc_id, chunks)
-
-    print("Document id:", doc_id)
-    print("Chunk ids:", chunk_ids)
