@@ -40,6 +40,15 @@ def init_db():
             document_id    INTEGER NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
             PRIMARY KEY     (chat_id, document_id)
         );
+
+        CREATE TABLE IF NOT EXISTS messages(
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            chat_id     INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+            role        TEXT NOT NULL,
+            content     TEXT NOT NULL,
+            sources     TEXT,
+            created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
         """)
 
 def create_document(conn, filename, file_type):
@@ -98,4 +107,19 @@ def get_chat_document_ids(conn, chat_id):
         (chat_id,),
     )
     return [r['document_id'] for r in rows]
+
+def add_message(conn, chat_id, role, content, sources=None):
+    cur = conn.execute(
+        "INSERT INTO messages (chat_id, role, content, sources) VALUES (?, ?, ?, ?)", (chat_id, role, content, sources)
+    )
+    conn.commit()
+    return cur.lastrowid
+
+def get_recent_messages(conn, chat_id, limit=6):
+    rows = conn.execute(
+        "SELECT role, content FROM messages WHERE chat_id = ? ORDER BY id DESC LIMIT ?", (chat_id, limit)
+    ).fetchall()
+
+    return [dict(r) for r in reversed(rows)]
+
 
