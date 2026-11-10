@@ -1,12 +1,8 @@
-import os
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-os.environ["OMP_NUM_THREADS"] = "1"
-
 import faiss
 import json
 import numpy as np
 from app.services.embeddings import generate_embeddings, embed_query
-
+import os
 
 class FaissVectorStore:
     def __init__(self, dim=384, path="data/faiss/index.faiss"):

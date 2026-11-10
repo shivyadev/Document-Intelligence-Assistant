@@ -5,17 +5,23 @@ from app.vector_store import FaissVectorStore
 from app.services.retrieve import retrieve
 
 def ingest_document(conn, store, extracted):
-
     doc_id = db.create_document(conn, extracted['filename'], extracted['file_type'])
+    try:
+        chunks = chunk_document(**extracted)
 
-    chunks = chunk_document(**extracted)
-    chunk_ids = db.insert_chunks(conn, doc_id, chunks)
+        if not chunks:
+            raise ValueError("No readable text found. Scanned PDFs are not supported yet.")
+        
+        chunk_ids = db.insert_chunks(conn, doc_id, chunks)
 
-    vectors = generate_embeddings(chunks)
-    store.add(chunk_ids, [doc_id] * len(chunk_ids), vectors)
-    store.save()
+        vectors = generate_embeddings(chunks)
+        store.add(chunk_ids, [doc_id] * len(chunk_ids), vectors)
+        store.save()
 
-    db.set_document_status(conn, doc_id, "ready")
+        db.set_document_status(conn, doc_id, "ready")
+    except Exception:
+        db.set_document_status(conn, doc_id, "failed")
+        raise
     return doc_id
 
 #  Uncomment to test the ingestion pipeline

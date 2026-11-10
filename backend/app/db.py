@@ -6,7 +6,7 @@ DB_PATH = Path("data/app.db")
 
 def get_connection():
     DB_PATH.parent.mkdir(parents=True,exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
@@ -91,6 +91,9 @@ def create_chat(conn, title=None):
     cur = conn.execute("INSERT INTO chats (title) VALUES (?)", (title,))
     conn.commit()
     return cur.lastrowid
+
+def get_chat(conn, chat_id):
+    return conn.execute("SELECT * FROM chats WHERE id = ?", (chat_id,)).fetchone()
 
 def attach_document(conn, chat_id, document_id):
     conn.execute(
