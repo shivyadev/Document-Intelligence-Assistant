@@ -1,2 +1,3 @@
 MODEL = "gemini-3.5-flash-lite"
 REWRITE_QUERIES = False
+MIN_RELEVANCE_SCORE=0.50

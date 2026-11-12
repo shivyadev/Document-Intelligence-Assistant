@@ -125,4 +125,10 @@ def get_recent_messages(conn, chat_id, limit=6):
 
     return [dict(r) for r in reversed(rows)]
 
+def get_messages(conn, chat_id):
+    rows = conn.execute(
+        "SELECT id, role, content, sources, created_at FROM messages WHERE chat_id = ? ORDER BY id",
+        (chat_id,),
+    )
+    return [dict(r) for r in rows]
 

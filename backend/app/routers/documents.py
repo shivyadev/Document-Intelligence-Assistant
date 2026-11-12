@@ -12,7 +12,7 @@ async def upload_document(chat_id: int, file: UploadFile, conn=Depends(get_conn)
     if not db.get_chat(conn, chat_id):
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    extracted = extract_document(file)
+    extracted = await extract_document(file)
 
     try:
         doc_id = await run_in_threadpool(ingest_document, conn, store, extracted)
