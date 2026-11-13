@@ -3,9 +3,15 @@ from app.services.chunking import chunk_document
 from app.services.embeddings import generate_embeddings
 from app.vector_store import FaissVectorStore
 from app.services.retrieve import retrieve
+import hashlib
 
-def ingest_document(conn, store, extracted):
-    doc_id = db.create_document(conn, extracted['filename'], extracted['file_type'])
+def hash_extracted(extracted):
+    text = "\n".join(p["text"] for p in extracted["pages"])
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def ingest_document(conn, store, extracted, content_hash=None):
+    doc_id = db.create_document(conn, extracted['filename'], extracted['file_type'], content_hash)
     try:
         chunks = chunk_document(**extracted)
 

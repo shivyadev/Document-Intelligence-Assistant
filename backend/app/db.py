@@ -15,10 +15,11 @@ def init_db():
     with get_connection() as conn:
         conn.executescript("""
         CREATE TABLE IF NOT EXISTS documents (
-            id        INTEGER PRIMARY KEY AUTOINCREMENT,
-            filename  TEXT NOT NULL,
-            file_type TEXT NOT NULL,
-            status    TEXT NOT NULL DEFAULT 'processing'
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename        TEXT NOT NULL,
+            file_type       TEXT NOT NULL,
+            status          TEXT NOT NULL DEFAULT 'processing',
+            content_hash    TEXT
         );
 
         CREATE TABLE IF NOT EXISTS chunks (
@@ -51,9 +52,9 @@ def init_db():
         );
         """)
 
-def create_document(conn, filename, file_type):
+def create_document(conn, filename, file_type, content_hash):
     cur = conn.execute(
-        "INSERT INTO documents (filename, file_type) VALUES (?, ?)", (filename, file_type),
+        "INSERT INTO documents (filename, file_type, content_hash) VALUES (?, ?, ?)", (filename, file_type, content_hash),
     )
     conn.commit()
     return cur.lastrowid
@@ -132,3 +133,69 @@ def get_messages(conn, chat_id):
     )
     return [dict(r) for r in rows]
 
+def list_chats(conn):
+    rows = conn.execute("SELECT id, title, created_at FROM chats ORDER BY id DESC")
+    return [dict(r) for r in rows]
+
+def list_chat_documents(conn, chat_id):
+    rows = conn.execute(
+        """SELECT d.id, d.filename, d.file_type, d.status
+           FROM chat_documents cd JOIN documents d ON d.id = cd.document_id
+           WHERE cd.chat_id = ? ORDER BY d.id""",
+        (chat_id,),
+    )
+    return [dict(r) for r in rows]
+
+def document_in_chat(conn, chat_id, document_id):
+    row = conn.execute(
+        "SELECT 1 FROM chat_documents WHERE chat_id = ? AND document_id = ?",
+        (chat_id, document_id),
+    ).fetchone()
+    return row is not None
+
+def find_document_in_chat(conn, chat_id, content_hash):
+    row = conn.execute(
+        """SELECT d.id, d.filename FROM chat_documents cd
+           JOIN documents d ON d.id = cd.document_id
+           WHERE cd.chat_id = ? AND d.content_hash = ?""",
+        (chat_id, content_hash),
+    ).fetchone()
+    return dict(row) if row else None
+
+def get_document_chunk_ids(conn, document_id):
+    rows = conn.execute("SELECT id FROM chunks WHERE document_id = ?", (document_id,))
+    return [r["id"] for r in rows]
+
+def get_exclusive_document_ids(conn, chat_id):
+    """Documents attached to this chat and to no other chat."""
+    rows = conn.execute(
+        """SELECT document_id FROM chat_documents
+           WHERE chat_id = ?
+             AND document_id NOT IN (
+                 SELECT document_id FROM chat_documents WHERE chat_id != ?)""",
+        (chat_id, chat_id),
+    )
+    return [r["document_id"] for r in rows]
+
+def detach_document(conn, chat_id, document_id):
+    conn.execute(
+        "DELETE FROM chat_documents WHERE chat_id = ? AND document_id = ?",
+        (chat_id, document_id),
+    )
+    conn.commit()
+
+
+def document_has_chats(conn, document_id):
+    row = conn.execute(
+        "SELECT 1 FROM chat_documents WHERE document_id = ? LIMIT 1", (document_id,)
+    ).fetchone()
+    return row is not None
+
+def delete_document_row(conn, document_id):
+    conn.execute("DELETE FROM documents WHERE id = ?", (document_id,))
+    conn.commit()
+
+
+def delete_chat_row(conn, chat_id):
+    conn.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
+    conn.commit()

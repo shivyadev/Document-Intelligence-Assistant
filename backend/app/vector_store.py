@@ -49,4 +49,11 @@ class FaissVectorStore:
                 break
         return results
 
+    def delete_chunks(self, chunk_ids):
+        if not chunk_ids:
+            return
+        self.index.remove_ids(np.array(chunk_ids, dtype="int64"))
+        for cid in chunk_ids:
+            self.doc_of.pop(cid, None)
+        self.save()
     
