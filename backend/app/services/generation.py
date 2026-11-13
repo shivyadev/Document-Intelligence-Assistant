@@ -20,23 +20,36 @@ def format_context(chunks):
         parts.append(f"[{label}]\n{c['text']}")
     return "\n\n---\n\n".join(parts)
 
-def generate_answer(question, chunks, history):
+def build_contents(question, chunks, history):
     contents = []
-
+    
     for m in history:
         role = "model" if m["role"] == "assistant" else "user"
         contents.append(types.Content(role=role, parts=[types.Part(text=m['content'])]))
 
     prompt = f"Sources:\n{format_context(chunks)}\n\nQuestion: {question}"
     contents.append(types.Content(role="user", parts=[types.Part(text=prompt)]))
+    return contents
 
+def generate_answer(question, chunks, history):
     response = client.models.generate_content(
         model=MODEL,
-        contents=contents,
+        contents=build_contents(question, chunks, history),
         config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
     )
 
     return response.text
+
+def generate_answer_stream(question, chunks, history):
+    stream = client.models.generate_content_stream(
+        model=MODEL,
+        contents=build_contents(question, chunks, history),
+        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
+    )
+    for piece in stream:
+        if piece.text:
+            yield piece.text
+
 
 REWRITE_PROMPT = """Rewrite the user's last question as a standalone search query,
 using the conversation for any missing context (names, topics, what "it" or "that" refers to).
