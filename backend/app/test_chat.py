@@ -1,7 +1,3 @@
-import os
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-os.environ["OMP_NUM_THREADS"] = "1"
-
 from app import db
 from app.vector_store import FaissVectorStore
 from app.services.ingest import ingest_document

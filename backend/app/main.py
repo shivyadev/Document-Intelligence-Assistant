@@ -1,7 +1,3 @@
-import os
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-os.environ["OMP_NUM_THREADS"] = "1"
-
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.routers import documents, chats, messages

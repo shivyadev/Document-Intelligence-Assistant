@@ -26,7 +26,7 @@ def ask(chat_id: int, body: Ask, conn=Depends(get_conn), store=Depends(get_store
         "question": result['question'],
         "answer": result["answer"],
         "sources": [
-            {"filename": c["filename"], "page": c["page"], "text": c["text"], "score": c["score"]}
+            {"filename": c["filename"], "page": c["page"], "text": c["text"], "score": c["score"], "rerank_score": c.get("rerank_score")}
             for c in result["sources"]
         ],
     }

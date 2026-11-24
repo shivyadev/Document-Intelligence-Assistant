@@ -1,28 +1,28 @@
-from sentence_transformers import SentenceTransformer
+import numpy as np
+from app.config import EMBEDDING_MODEL_NAME
+from fastembed import TextEmbedding
 
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+_model = None
 
-model = SentenceTransformer(MODEL_NAME, device="cpu")
+def get_model():
+    global _model
+    if _model is None:
+        _model = TextEmbedding(model_name=EMBEDDING_MODEL_NAME)
+    return _model
+
+
+def _normalize(vectors):
+    vectors = np.asarray(vectors, dtype="float32")
+    norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+    return vectors / np.clip(norms, 1e-12, None)
+
 
 def generate_embeddings(chunks):
     if not chunks:
         return []
+    texts = [chunk["text"] for chunk in chunks]
+    return _normalize(list(get_model().passage_embed(texts)))
 
-    texts = [chunk['text'] for chunk in chunks]
-
-    embeddings = model.encode(
-        texts,
-        convert_to_numpy=True,
-        show_progress_bar=False,
-        normalize_embeddings=True,
-    )
-
-    return embeddings.astype("float32")
 
 def embed_query(question):
-    return model.encode(
-        question, 
-        convert_to_numpy=True,
-        normalize_embeddings=True
-        ).astype("float32")
-
+    return _normalize(list(get_model().query_embed(question)))[0]

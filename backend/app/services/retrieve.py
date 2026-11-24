@@ -1,6 +1,5 @@
 from app import db
 from app.services.embeddings import embed_query
-from app.vector_store import FaissVectorStore
 
 def retrieve(conn, store, chat_id, question, k=5):
     doc_ids = db.get_chat_document_ids(conn, chat_id)

@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from app.config import MODEL
+from app.config import GENERATION_MODEL
 
 load_dotenv()
 
@@ -33,7 +33,7 @@ def build_contents(question, chunks, history):
 
 def generate_answer(question, chunks, history):
     response = client.models.generate_content(
-        model=MODEL,
+        model=GENERATION_MODEL,
         contents=build_contents(question, chunks, history),
         config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
     )
@@ -42,7 +42,7 @@ def generate_answer(question, chunks, history):
 
 def generate_answer_stream(question, chunks, history):
     stream = client.models.generate_content_stream(
-        model=MODEL,
+        model=GENERATION_MODEL,
         contents=build_contents(question, chunks, history),
         config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
     )
@@ -66,7 +66,7 @@ def rewrite_query(question: str, history: list[dict]):
 
     try:
         r = client.models.generate_content(
-            model=MODEL,
+            model=GENERATION_MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=REWRITE_PROMPT
