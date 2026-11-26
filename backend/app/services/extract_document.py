@@ -1,33 +1,32 @@
 from pathlib import Path
-
 import pymupdf
 from fastapi import HTTPException, UploadFile
+
+class ExtractionError(Exception):
+     """Raised when an uploaded file can't be turned into text."""
 
 async def extract_document(file: UploadFile):
     filename = file.filename or ""
     extension = Path(filename).suffix.lower()
 
     if extension not in [".pdf", ".txt"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Only PDF and TXT files are supported."
+        raise ExtractionError(
+            "Only PDF and TXT files are supported."
         )
 
     content = await file.read()
 
     if not content:
-        raise HTTPException(
-            status_code=400,
-            detail="The upload file is empty"
+        raise ExtractionError(
+            "The upload file is empty"
         )
 
     if extension == ".txt":
         try:
             text = content.decode('utf-8')
         except UnicodeDecodeError: 
-            raise HTTPException(
-                status_code=400,
-                detail="The TXT file must use UTF-8 encoding."
+            raise ExtractionError(
+                "The TXT file must use UTF-8 encoding."
             )
 
         return {
@@ -52,9 +51,8 @@ async def extract_document(file: UploadFile):
 
     except Exception:
 
-        raise HTTPException(
-            status_code=400,
-            detail="Could not read the PDF file."
+        raise ExtractionError(
+            "Could not read the PDF file."
         )
 
     return {

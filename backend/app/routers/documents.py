@@ -3,7 +3,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app import db
 from app.dependencies import get_conn, get_store
-from app.services.extract_document import extract_document
+from app.services.extract_document import extract_document, ExtractionError
 from app.services.ingest import ingest_document, hash_extracted
 from app.services.deletion import remove_document_from_chat
 
@@ -20,7 +20,10 @@ async def upload_document(chat_id: int, file: UploadFile, conn=Depends(get_conn)
     if not db.get_chat(conn, chat_id):
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    extracted = await extract_document(file)
+    try:
+        extracted = await extract_document(file)
+    except ExtractionError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     content_hash = hash_extracted(extracted)
     existing = db.find_document_in_chat(conn, chat_id, content_hash)
