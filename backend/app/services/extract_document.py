@@ -1,7 +1,7 @@
 from pathlib import Path
 import pymupdf
 from fastapi import UploadFile
-from app.config import MAX_EMPTY_PAGE_RATIO, MIN_CHARS_PER_PAGE
+from app.config import MAX_EMPTY_PAGE_RATIO, MIN_CHARS_PER_PAGE, MAX_UPLOAD_BYTES
 
 class ExtractionError(Exception):
      """Raised when an uploaded file can't be turned into text."""
@@ -17,6 +17,9 @@ async def extract_document(file: UploadFile):
 
     content = await file.read()
 
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise ExtractionError("File is too large (maximum 20 MB).")
+
     if not content:
         raise ExtractionError(
             "The upload file is empty"
@@ -24,7 +27,7 @@ async def extract_document(file: UploadFile):
 
     if extension == ".txt":
         try:
-            text = content.decode('utf-8')
+            text = content.decode('utf-8-sig')
         except UnicodeDecodeError: 
             raise ExtractionError(
                 "The TXT file must use UTF-8 encoding."
