@@ -37,7 +37,7 @@ async def upload_document(chat_id: int, file: UploadFile, conn=Depends(get_conn)
         raise HTTPException(status_code=400, detail=str(e))
 
     db.attach_document(conn, chat_id, doc_id)
-    return {"document_id": doc_id, "filename": extracted["filename"], "status": "ready"}
+    return {"document_id": doc_id, "filename": extracted["filename"], "status": "ready", "skipped_pages": extracted.get("skipped_pages", 0)}
 
 @router.delete("/{document_id}")
 def remove_document(chat_id: int, document_id: int, conn=Depends(get_conn), store=Depends(get_store)):

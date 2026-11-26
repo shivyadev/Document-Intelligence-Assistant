@@ -7,3 +7,5 @@ RERANK = True
 RETRIEVE_K = 20          
 FINAL_K = 5              
 MIN_RERANK_SCORE = 3.0 
+MIN_CHARS_PER_PAGE = 20
+MAX_EMPTY_PAGE_RATIO = 0.8
